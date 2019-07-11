@@ -3,9 +3,24 @@ import App from './App.vue'
 import router from './router'
 import store from './store'
 import 'amfe-flexible'
-import { Button, Tabbar, TabbarItem, NavBar, Field, CellGroup, Loading, List, Tab, Tabs, PullRefresh, Cell } from 'vant'
+
+import Vant from 'vant'
+import 'vant/lib/index.css'
+
+import VeeValidate, { Validator } from 'vee-validate'
+import zhCN from 'vee-validate/dist/locale/zh_CN'
+Vue.use(VeeValidate, {
+  events: ''
+})
+// Validator.localize('zh_CN', zhCN)
+Validator.localize('zh_CN', zhCN)
+Vue.use(Vant)
+Vue.prototype.$sleep = time => {
+  return new Promise((resolve, reject) => {
+    window.setTimeout(resolve, time)
+  })
+}
 Vue.config.productionTip = false
-Vue.use(Button).use(Tabbar).use(TabbarItem).use(NavBar).use(Field).use(CellGroup).use(Loading).use(List).use(Tab).use(Tabs).use(PullRefresh).use(Cell)
 new Vue({
   router,
   store,
