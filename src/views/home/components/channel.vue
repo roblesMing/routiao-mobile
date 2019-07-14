@@ -56,7 +56,7 @@
   </van-popup>
 </template>
 <script>
-import { getAllChannels, deleteChannelUser } from '@/api/channel.js'
+import { getAllChannels, deleteUserChannel, updateUserChannel } from '@/api/channel.js'
 export default {
   props: {
     value: {
@@ -105,12 +105,16 @@ export default {
         console.log(err)
       }
     },
-    addchannel (item) {
+    async addchannel (item) {
       const temporaryChannels = this.channels.slice(0)
       temporaryChannels.push(item)
       this.$emit('update:channels', temporaryChannels)
       const { user } = this.$store.state
       if (user) {
+        await updateUserChannel([{
+          id: item.id,
+          seq: temporaryChannels.length - 1
+        }])
       } else {
         window.localStorage.setItem('channels', JSON.stringify(temporaryChannels))
       }
@@ -126,7 +130,7 @@ export default {
       this.$emit('update:channels', temporaryChannels)
       const { user } = this.$store.state
       if (user) {
-        await deleteChannelUser(item.id)
+        await deleteUserChannel(item.id)
       } else {
         window.localStorage.setItem('channels', JSON.stringify(temporaryChannels))
       }

@@ -4,14 +4,17 @@ import router from './router'
 import store from './store'
 import 'amfe-flexible'
 
-import Vant from 'vant'
+import Vant, { Lazyload } from 'vant'
 import 'vant/lib/index.css'
 
 import VeeValidate, { Validator } from 'vee-validate'
 import zhCN from 'vee-validate/dist/locale/zh_CN'
+import relativeTime from '@/filters/relative-time'
+Vue.use(Lazyload)
 Vue.use(VeeValidate, {
   events: ''
 })
+Vue.filter('relativeTime', relativeTime)
 // Validator.localize('zh_CN', zhCN)
 Validator.localize('zh_CN', zhCN)
 Vue.use(Vant)

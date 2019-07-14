@@ -12,3 +12,12 @@ export const getArticles = ({
     }
   })
 }
+export const dislikesArticle = articleId => {
+  return request({
+    method: 'POST',
+    url: '/app/v1_0/article/dislikes',
+    data: {
+      target: articleId
+    }
+  })
+}

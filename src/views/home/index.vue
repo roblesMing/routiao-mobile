@@ -20,7 +20,26 @@
             v-for="articleItem in channelItem.articles"
             :key="articleItem.art_id"
             :title="articleItem.title"
-          />
+          >
+          <van-grid :border="false" :column-num="3">
+          <van-grid-item v-for="(img, index) in articleItem.cover.images" :key="index">
+            <van-image :src="img" lazy-load />
+          </van-grid-item>
+        </van-grid>
+  <!-- <van-icon name="wap-nav" /> -->
+          <!-- <template>
+          <lazy-component v-if='articleItem.cover.type'>
+          <img v-for="(img,index) in articleItem.cover.images"  v-lazy='img' :key='index' style='width: 100px'>
+        </lazy-component>
+        </template> -->
+            <p slot='label'>
+              <span>{{articleItem.aut_name}}</span>
+              &nbsp;
+              <span>{{articleItem.comm_count}}评论</span>
+              <span>{{ articleItem.pubdate | relativeTime }}</span>
+              <van-icon name="close" class='close' @click='handleMoreAction(articleItem)'/>
+            </p>
+          </van-cell>
         </van-list>
       </van-pull-refresh>
     </van-tab>
@@ -32,11 +51,27 @@
       <van-tabbar-item icon="setting-o" to="my">我的</van-tabbar-item>
     </van-tabbar>
     <home-channel v-model='show' :channels.sync='channels' :active-index.sync='activeChannelIndex'></home-channel>
+  <van-dialog
+  v-model="dialogShow"
+  :showConfirmButton='false'
+>
+  <van-cell-group v-if='!toggleRubbish'>
+    <van-cell title="不敢兴趣"/>
+    <van-cell title="反馈垃圾内容" is-link @click="toggleRubbish = true"/>
+  </van-cell-group>
+    <van-cell-group v-if='toggleRubbish'>
+    <van-cell icon="arrow-left" @click="toggleRubbish = false" />
+    <van-cell title="标题夸张"/>
+    <van-cell title="低俗色情"/>
+    <van-cell title="错别字多"/>
+    <van-cell title="旧闻重复"/>
+  </van-cell-group>
+</van-dialog>
   </div>
 </template>
 <script>
 import { getUserChannel } from '@/api/channel'
-import { getArticles } from '@/api/article'
+import { getArticles, dislikesArticle } from '@/api/article'
 import HomeChannel from '@/views/home/components/channel.vue'
 export default {
   name: 'homeIndex',
@@ -52,7 +87,9 @@ export default {
       pullRefreshLoading: false,
       pageActive: 0,
       channels: [],
-      show: false
+      show: false,
+      dialogShow: false,
+      toggleRubbish: false
     }
   },
   computed: {
@@ -145,6 +182,10 @@ export default {
       } catch (err) {
         console.log(err)
       }
+    },
+    async handleMoreAction(item) {
+      this.dialogShow = true
+      console.log(item)
     }
   }
 }
@@ -173,5 +214,8 @@ export default {
   align-items: center;
   background-color: #fff;
   opacity: .6;
+}
+.close {
+  float:right;
 }
 </style>
