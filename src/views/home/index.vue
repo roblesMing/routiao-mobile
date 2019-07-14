@@ -5,8 +5,11 @@
       fixed
     />
     <van-tabs v-model="activeChannelIndex">
+    <div slot='nav-right' class='wap-nav' @click='show=true'>
+      <van-icon name="wap-nav" />
+    </div>
     <van-tab v-for='channelItem  in channels' :title="channelItem .name" :key='channelItem .id'>
-      <van-pull-refresh v-model="pullRefreshLoading" @refresh="onRefresh">
+      <van-pull-refresh v-model="channelItem.downPullLoading" @refresh="onRefresh" :success-text='channelItem.downPullSuccessText' :success-duration='1000'>
         <van-list
           v-model="channelItem.upPullLoading"
           :finished="channelItem.upPullFinished"
@@ -28,13 +31,18 @@
       <van-tabbar-item icon="friends-o" to="/video">视频</van-tabbar-item>
       <van-tabbar-item icon="setting-o" to="my">我的</van-tabbar-item>
     </van-tabbar>
+    <home-channel v-model='show' :channels.sync='channels' :active-index.sync='activeChannelIndex'></home-channel>
   </div>
 </template>
 <script>
 import { getUserChannel } from '@/api/channel'
 import { getArticles } from '@/api/article'
+import HomeChannel from '@/views/home/components/channel.vue'
 export default {
   name: 'homeIndex',
+  components: {
+    HomeChannel
+  },
   data () {
     return {
       activeChannelIndex: 0,
@@ -43,13 +51,21 @@ export default {
       finished: false,
       pullRefreshLoading: false,
       pageActive: 0,
-      channels: []
+      channels: [],
+      show: false
     }
   },
   computed: {
     activeChannel () {
-      console.log(this.activeChannelIndex)
       return this.channels[this.activeChannelIndex]
+    }
+  },
+  watch: {
+    async '$store.state.user' () {
+      console.log('user改变了')
+      await this.loadChannels()
+      this.activeChannel.upPullLoading = true
+      this.onload()
     }
   },
   created () {
@@ -57,11 +73,11 @@ export default {
   },
   methods: {
     async onLoad () {
-      console.log('onload')
       // 异步更新数据
       await this.$sleep(800)
       let data = []
       data = await this.loadArticles()
+      // console.log(data)
       if (!data.pre_timestamp && !data.results.length) {
         this.activeChannel.upPullFinished = false
         this.activeChannel.upPullLoading = true
@@ -75,10 +91,23 @@ export default {
       this.activeChannel.articles.push(...data.results)
       this.activeChannel.upPullLoading = false
     },
-    onRefresh () {
-      setTimeout(() => {
-        this.pullRefreshLoading = false
-      }, 500)
+    async onRefresh () {
+      const { activeChannel } = this
+      const timestamp = activeChannel.timestamp
+      activeChannel.timestamp = Date.now()
+      // activeChannel.timestamp = Date.now()
+      // console.log(11, activeChannel, Date.now())
+      const data = await this.loadArticles()
+      if (data.results.length) {
+        activeChannel.articles = data.results
+        activeChannel.timestamp = data.pre_timestamp
+        activeChannel.downPullSuccessText = '更新成功'
+        this.onLoad()
+      } else {
+        activeChannel.downPullSuccessText = '已是最新数据'
+        activeChannel.timestamp = timestamp
+      }
+      activeChannel.downPullLoading = false
     },
     async loadChannels () {
       const { user } = this.$store.state
@@ -102,18 +131,7 @@ export default {
         item.upPullFinished = false
       })
       this.channels = channels
-      console.log(this.channels)
-      // try {
-      //   const localChannel = window.localStorage.getItem('channels')
-      //   if (localChannel) {
-      //     this.channels = localChannel
-      //   } else {
-      //     this.channels = (await getUserChannel()).channels
-      //   }
-      //   console.log(this.channels)
-      // } catch (err) {
-      //   console.log(err)
-      // }
+      console.log('000', this.channels)
     },
     async loadArticles () {
       try {
@@ -123,7 +141,6 @@ export default {
           timestamp,
           withTop: 1
         })
-        console.log(data)
         return data
       } catch (err) {
         console.log(err)
@@ -148,5 +165,13 @@ export default {
   }
  .van-tabs /deep/ .van-tabs__content {
   margin-top: 92px;
+}
+.van-tabs /deep/ .wap-nav {
+  position: sticky;
+  right: 0;
+  display: flex;
+  align-items: center;
+  background-color: #fff;
+  opacity: .6;
 }
 </style>

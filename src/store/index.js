@@ -10,7 +10,7 @@ export default new Vuex.Store({
   mutations: {
     setUser (state, user) {
       this.user = user
-      localStorage.setItem('user', JSON.stringify(state.user))
+      localStorage.setItem('user', JSON.stringify(user))
     }
   },
   actions: {
