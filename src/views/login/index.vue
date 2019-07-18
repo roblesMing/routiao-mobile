@@ -67,7 +67,9 @@ export default {
         this.loginLoading = true
         const data = await login(this.user)
         this.$store.commit('setUser', data)
-        this.$router.push({ name: 'home' })
+        const redirect = this.$route.query.redirect || '/'
+        this.$router.push(redirect)
+        // this.$router.push({ name: 'home' })
       } catch (err) {
         // console.log(111, err)
         this.$toast.fail('登录失败')

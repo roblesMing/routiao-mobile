@@ -18,8 +18,9 @@
         >
           <van-cell
             v-for="articleItem in channelItem.articles"
-            :key="articleItem.art_id"
+            :key="articleItem.art_id.toString()"
             :title="articleItem.title"
+            @click='$router.push({name: "article", params: {articleId: articleItem.art_id}})'
           >
           <van-grid :border="false" :column-num="3">
           <van-grid-item v-for="(img, index) in articleItem.cover.images" :key="index">
@@ -37,7 +38,7 @@
               &nbsp;
               <span>{{articleItem.comm_count}}评论</span>
               <span>{{ articleItem.pubdate | relativeTime }}</span>
-              <van-icon name="close" class='close' @click='handleMoreAction(articleItem)'/>
+              <van-icon name="close" class='close' @click.stop='handleMoreAction(articleItem)'/>
             </p>
           </van-cell>
         </van-list>
@@ -54,24 +55,25 @@
   <van-dialog
   v-model="dialogShow"
   :showConfirmButton='false'
+  closeOnClickOverlay
+  :before-close='handleMoreActionClose'
 >
   <van-cell-group v-if='!toggleRubbish'>
-    <van-cell title="不敢兴趣"/>
+    <van-cell title="不感兴趣" @click='handleDislick' />
     <van-cell title="反馈垃圾内容" is-link @click="toggleRubbish = true"/>
+    <van-cell title='拉黑作者' @click='addBlackList'></van-cell>
   </van-cell-group>
     <van-cell-group v-if='toggleRubbish'>
     <van-cell icon="arrow-left" @click="toggleRubbish = false" />
-    <van-cell title="标题夸张"/>
-    <van-cell title="低俗色情"/>
-    <van-cell title="错别字多"/>
-    <van-cell title="旧闻重复"/>
+    <van-cell v-for='item in repoTypes' :title="item.label" :key='item.value' @click='handleReportArticle(item.value)'/>
   </van-cell-group>
 </van-dialog>
   </div>
 </template>
 <script>
 import { getUserChannel } from '@/api/channel'
-import { getArticles, dislikesArticle } from '@/api/article'
+import { getArticles, dislikesArticle, reportArticle } from '@/api/article'
+import { addBlackList } from '@/api/user'
 import HomeChannel from '@/views/home/components/channel.vue'
 export default {
   name: 'homeIndex',
@@ -89,7 +91,19 @@ export default {
       channels: [],
       show: false,
       dialogShow: false,
-      toggleRubbish: false
+      toggleRubbish: false,
+      currentArticle: null,
+      repoTypes: [
+        { label: '标题夸张', value: 1 },
+        { label: '低俗色情', value: 2 },
+        { label: '错别字多', value: 3 },
+        { label: '旧文重复', value: 4 },
+        { label: '广告软文', value: 5 },
+        { label: '内容不实', value: 6 },
+        { label: '涉嫌违法犯罪', value: 7 },
+        { label: '侵权', value: 8 },
+        { label: '其他问题', value: 9 }
+      ]
     }
   },
   computed: {
@@ -97,16 +111,24 @@ export default {
       return this.channels[this.activeChannelIndex]
     }
   },
-  watch: {
+  // watch: {
+  //   async '$store.state.user' () {
+  //     console.log(999,'user改变了')
+  //     await this.loadChannels()
+  //     this.activeChannel.upPullLoading = true
+  //     this.onLoad()
+  //   }
+  // },
+    watch: {
     async '$store.state.user' () {
-      console.log('user改变了')
+      console.log('user 改变了')
       await this.loadChannels()
-      this.activeChannel.upPullLoading = true
-      this.onload()
+      this.activeChannel.upLoading = true
+      this.onLoad()
     }
   },
-  created () {
-    this.loadChannels()
+  async created () {
+    await this.loadChannels()
   },
   methods: {
     async onLoad () {
@@ -132,8 +154,6 @@ export default {
       const { activeChannel } = this
       const timestamp = activeChannel.timestamp
       activeChannel.timestamp = Date.now()
-      // activeChannel.timestamp = Date.now()
-      // console.log(11, activeChannel, Date.now())
       const data = await this.loadArticles()
       if (data.results.length) {
         activeChannel.articles = data.results
@@ -168,7 +188,6 @@ export default {
         item.upPullFinished = false
       })
       this.channels = channels
-      console.log('000', this.channels)
     },
     async loadArticles () {
       try {
@@ -180,12 +199,43 @@ export default {
         })
         return data
       } catch (err) {
-        console.log(err)
+        throw err
       }
     },
-    async handleMoreAction(item) {
+    handleMoreAction (item) {
+      this.currentArticle = item
       this.dialogShow = true
-      console.log(item)
+    },
+    async handleDislick () {
+      const article = this.currentArticle.art_id.toString()
+      await dislikesArticle(article)
+      this.dialogShow = false
+      const articles = this.activeChannel.articles
+      const delIndex = articles.findIndex(item => item.art_id.toString() === article)
+      articles.splice(delIndex, 1)
+      this.$toast('操作成功')
+    },
+    async addBlackList () {
+      await addBlackList(this.currentArticle.aut_id)
+      this.dialogShow = false
+      this.$toast('操作成功')
+    },
+    handleMoreActionClose (action, done) {
+      done()
+      setTimeout(() => {
+        this.toggleRubbish = false
+      },400)
+    },
+    async handleReportArticle (type) {
+      try {
+        await reportArticle({ target: this.currentArticle.art_id.toString(), type, remark: '' })
+        this.$toast('举报文章成功')
+      } catch (err) {
+        console.log(err)
+        if (err.response.status === 409) {
+          this.$toast('该文章已被举报')
+        }
+      }
     }
   }
 }
@@ -208,6 +258,7 @@ export default {
   margin-top: 92px;
 }
 .van-tabs /deep/ .wap-nav {
+  font-size: 60px;
   position: sticky;
   right: 0;
   display: flex;

@@ -147,11 +147,11 @@ export default {
     margin-bottom: 20px;
     padding: 10px;
     .title {
-      font-size: 30px;
-      margin-right: 5px;
+      font-size: 40px;
+      // margin-right: 10px;
     }
     .desc {
-      font-size: 12px;
+      font-size: 24px;
     }
   }
   .content {

@@ -10,6 +10,7 @@ import 'vant/lib/index.css'
 import VeeValidate, { Validator } from 'vee-validate'
 import zhCN from 'vee-validate/dist/locale/zh_CN'
 import relativeTime from '@/filters/relative-time'
+import checkLogin from './utils/check-login'
 Vue.use(Lazyload)
 Vue.use(VeeValidate, {
   events: ''
@@ -23,6 +24,7 @@ Vue.prototype.$sleep = time => {
     window.setTimeout(resolve, time)
   })
 }
+Vue.prototype.$checkLogin = checkLogin
 Vue.config.productionTip = false
 new Vue({
   router,
